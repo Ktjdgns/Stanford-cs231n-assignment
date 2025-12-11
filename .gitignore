@@ -1,0 +1,5 @@
+# Large data/model file extensions to ignore
+*.h5
+*.npz
+*.pth
+*.tar.gz
