@@ -217,7 +217,9 @@ class GaussianDiffusion(nn.Module):
         # can be done as: x_t = mu + sigma * noise where noise is sampled from N(0, 1).
         # Approximately 3 lines of code.
         ####################################################################
-
+        a_sqrt = extract(self.sqrt_alphas_cumprod, t, x_start.shape)
+        sigma = extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape)
+        x_t = a_sqrt * x_start + sigma * noise
         ####################################################################
         return x_t
 

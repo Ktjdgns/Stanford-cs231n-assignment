@@ -236,7 +236,7 @@ def compute_iou(pred, gt, num_classes):
     return iou / num_classes
 
 
-class DINOSegmentation:
+class DINOSegmentation():
     def __init__(self, device, num_classes: int, inp_dim : int = 384):
         """
         Initialize the DINOSegmentation model.
@@ -280,17 +280,17 @@ class DINOSegmentation:
         ############################################################################
         # TODO: Train your model for `num_iters` steps.                            #
         ############################################################################
-        for i in range(num_iters):
-            self.optimizer.zero_grad()
+        with tqdm(range(num_iters), desc="[Training]") as bar:
+            for i in bar:
+                self.optimizer.zero_grad()
 
-            pred = self.model(X_train)
-            loss = self.loss(pred, Y_train)
-                        
-            loss.backward()
-            self.optimizer.step()
+                X_pred = self.model(X_train)
+                loss = self.loss(X_pred, Y_train)
+                
+                loss.backward()
+                self.optimizer.step()
 
-            if i%50==0:
-                print(f"Train iteration: [{i}/{num_iters}] Loss: {loss}")
+                bar.set_postfix(loss=loss.item())
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
