@@ -180,7 +180,10 @@ class Unet(nn.Module):
             # Make sure to exactly follow this structure of ModuleList in order to
             # load a pretrained checkpoint.
             ##################################################################
-
+            down_block = nn.ModuleList([
+                ResnetBlock(dim_in, dim_in, context_dim),
+                ResnetBlock(dim_in, dim_in, context_dim),
+                Downsample(dim_in, dim_out)])
             ##################################################################
             self.downs.append(down_block)
 
@@ -204,7 +207,11 @@ class Unet(nn.Module):
             # Don't forget to account for the skip connections by having 2 x dim_out
             # channels at the input of both ResnetBlocks.
             ##################################################################
-
+            up_block = nn.ModuleList([
+                Upsample(dim_in, dim_out),
+                ResnetBlock(2 * dim_out, dim_out, context_dim),
+                ResnetBlock(2 * dim_out, dim_out, context_dim)
+            ])
             self.ups.append(up_block)
             ##################################################################
 
@@ -226,7 +233,7 @@ class Unet(nn.Module):
         # You will have to call self.forward two times.
         # For unconditional sampling, pass None in`text_emb`.
         ##################################################################
-
+        
         ##################################################################
 
         return x
@@ -281,7 +288,31 @@ class Unet(nn.Module):
         #      skip connection from the downsampling path.
         #    - Make sure to pass the context to each ResNet block.
         ##################################################################
+        skip = []
+        
+        # Downsampling
+        for idx, (ResNet_1, ResNet_2, downsample) in enumerate(self.downs):
+            x = ResNet_1(x, context)
+            skip.append(x)
 
+            x = ResNet_2(x, context)
+            skip.append(x)
+
+            x = downsample(x)
+
+        # Middle
+        x = self.mid_block1(x, context)
+        x = self.mid_block2(x, context)
+
+        # Upsampling
+        for idx, (upsample, ResNet_1, ResNet_2) in enumerate(self.ups):
+            x = upsample(x)
+            
+            x = torch.cat([x, skip.pop()], dim=1)
+            x = ResNet_1(x, context)
+
+            x = torch.cat([x, skip.pop()], dim=1)
+            x = ResNet_2(x, context)
         ##################################################################
 
         # Final block
